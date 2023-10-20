@@ -12,7 +12,7 @@ const XLSX = require("xlsx");
 const fetch = require("node-fetch");
 const {firestore, initializeApp} = require("firebase-admin");
 
-exports.getWcJson = onRequest(async (request, response) => {
+exports.getWcJson = onRequest(async (_, response) => {
   initializeApp();
   console.log("getWcJson");
   const url =
@@ -32,6 +32,18 @@ exports.getWcJson = onRequest(async (request, response) => {
     const obj = {};
     header.forEach((key, i) => {
       obj[key] = row[i] || null;
+      if (
+        key === "isHandicappedAccessible" ||
+        key === "canBePayedWithCoins" ||
+        key === "canBePayedInApp" ||
+        key === "canBePayedWithNFC" ||
+        key === "hasChangingTable" ||
+        key === "hasUrinal"
+      ) {
+        obj[key] = row[i] || false;
+      } else {
+        obj[key] = row[i] || null;
+      }
     });
     return obj;
   });
