@@ -50,12 +50,12 @@ exports.getWcJson = onRequest(async (_, response) => {
 
   json.forEach((item, index) => {
     firestore()
-      .collection("toilettes")
-      .doc(item["LavatoryID"])
-      .set(item)
-      .catch((error) => {
-        console.error("Error writing to Firestore:", error);
-        response.status(500).send("Internal Server Error");
-      });
+        .collection("toilettes")
+        .doc(item["LavatoryID"])
+        .set(item)
+        .catch((error) => {
+          console.error("Error writing to Firestore:", error);
+          response.status(500).send("Internal Server Error");
+        });
   });
 });
