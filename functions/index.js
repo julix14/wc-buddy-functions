@@ -7,55 +7,58 @@
  * See a full list of supported triggers at https://firebase.google.com/docs/functions
  */
 
-const {onRequest} = require("firebase-functions/v2/https");
+const functions = require("firebase-functions");
 const XLSX = require("xlsx");
 const fetch = require("node-fetch");
 const {firestore, initializeApp} = require("firebase-admin");
 
-exports.getWcJson = onRequest(async (_, response) => {
-  initializeApp();
-  console.log("getWcJson");
-  const url =
-    "https://www.berlin.de/sen/uvk/_assets/verkehr/infrastruktur/oeffentliche-toiletten/berliner-toiletten-standorte.xlsx";
 
-  const file = await (await fetch(url)).arrayBuffer();
-  const workbook = XLSX.read(file);
+exports.getWcJson = functions
+    .region("europe-west1")
+    .https.onRequest(async (index, response) => {
+      initializeApp();
+      console.log("getWcJson");
+      const url =
+        "https://www.berlin.de/sen/uvk/_assets/verkehr/infrastruktur/oeffentliche-toiletten/berliner-toiletten-standorte.xlsx";
 
-  const worksheet = workbook.Sheets[workbook.SheetNames[0]];
+      const file = await (await fetch(url)).arrayBuffer();
+      const workbook = XLSX.read(file);
 
-  const rawData = XLSX.utils.sheet_to_json(worksheet, {header: 1});
+      const worksheet = workbook.Sheets[workbook.SheetNames[0]];
 
-  const header = rawData[3];
-  const data = rawData.slice(4);
+      const rawData = XLSX.utils.sheet_to_json(worksheet, {header: 1});
 
-  const json = data.map((row) => {
-    const obj = {};
-    header.forEach((key, i) => {
-      obj[key] = row[i] || null;
-      if (
-        key === "isHandicappedAccessible" ||
-        key === "canBePayedWithCoins" ||
-        key === "canBePayedInApp" ||
-        key === "canBePayedWithNFC" ||
-        key === "hasChangingTable" ||
-        key === "hasUrinal"
-      ) {
-        obj[key] = row[i] || false;
-      } else {
-        obj[key] = row[i] || null;
-      }
-    });
-    return obj;
-  });
+      const header = rawData[3];
+      const data = rawData.slice(4);
 
-  json.forEach((item, index) => {
-    firestore()
-        .collection("toilettes")
-        .doc(item["LavatoryID"])
-        .set(item)
-        .catch((error) => {
-          console.error("Error writing to Firestore:", error);
-          response.status(500).send("Internal Server Error");
+      const json = data.map((row) => {
+        const obj = {};
+        header.forEach((key, i) => {
+          obj[key] = row[i] || null;
+          if (
+            key === "isHandicappedAccessible" ||
+            key === "canBePayedWithCoins" ||
+            key === "canBePayedInApp" ||
+            key === "canBePayedWithNFC" ||
+            key === "hasChangingTable" ||
+            key === "hasUrinal"
+          ) {
+            obj[key] = row[i] || false;
+          } else {
+            obj[key] = row[i] || null;
+          }
         });
-  });
-});
+        return obj;
+      });
+
+      json.forEach((item, index) => {
+        firestore()
+            .collection("toilettes")
+            .doc(item["LavatoryID"])
+            .set(item)
+            .catch((error) => {
+              console.error("Error writing to Firestore:", error);
+              response.status(500).send("Internal Server Error");
+            });
+      });
+    });
