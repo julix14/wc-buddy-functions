@@ -61,4 +61,5 @@ exports.getWcJson = functions
               response.status(500).send("Internal Server Error");
             });
       });
+      response.status(200).send("OK");
     });
